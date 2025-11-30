@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>পেইড মডেল টেস্ট (PIN লুকানো)</title>
+    <style>
+        /* স্টাইল অপরিবর্তিত আছে */
+        body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .main-container { max-width: 800px; margin: auto; }
+        
+        #lock-screen {
+            background: white; padding: 50px 30px; border-radius: 10px; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); text-align: center;
+        }
+        #lock-screen h3 { color: #007bff; }
+        #lock-screen input[type="text"], #lock-screen input[type="email"], #lock-screen input[type="password"] {
+            width: 80%; padding: 12px; margin-bottom: 15px; border: 1px solid #ced4da; border-radius: 5px;
+            box-sizing: border-box;
+        }
+        #lock-screen button {
+            background: #ffc107; color: #333; font-weight: bold; padding: 12px 30px; border: none; 
+            border-radius: 5px; cursor: pointer; transition: background-color 0.2s;
+        }
+        #lock-screen button:hover { background: #e0a800; }
+        
+        .quiz-container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.1); display: none; }
+        h2 { color: #007bff; text-align: center; margin-bottom: 25px; }
+        .timer-info { text-align: center; font-size: 1.5em; font-weight: bold; margin-bottom: 20px; padding: 10px; border: 2px solid #dc3545; color: #dc3545; border-radius: 5px; display: none; }
+        .question-box { margin-bottom: 25px; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; }
+        .question { margin-bottom: 15px; font-weight: bold; color: #343a40; }
+        .options label { display: block; margin-bottom: 8px; cursor: pointer; padding: 5px; border-radius: 4px; transition: background-color 0.2s; }
+        .options label:hover { background-color: #f8f9fa; }
+        button#submit-btn { background: #28a745; color: white; border: none; padding: 12px 25px; cursor: pointer; margin-top: 25px; font-size: 1.1em; border-radius: 5px; width: 100%; }
+        #result { margin-top: 30px; padding: 20px; border-radius: 5px; font-weight: bold; text-align: center; font-size: 1.2em; }
+        .correct-answer { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .incorrect-answer { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .explanation { margin-top: 10px; padding: 10px; border-left: 4px solid #007bff; background-color: #e9f7ff; font-size: 0.9em; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div id="lock-screen">
+        <h3>💰 পেইড মডেল টেস্ট শুরু করতে রেজিস্ট্রেশন করুন</h3>
+        <p>পরীক্ষার জন্য ফি প্রদান করার পর আপনার PIN কোডটি ব্যবহার করুন।</p>
+        
+        <input type="text" id="student-name" placeholder="ছাত্র/ছাত্রীর নাম" required><br>
+        <input type="text" id="student-roll" placeholder="রোল/আইডি" required><br>
+        <input type="text" id="student-class" placeholder="ক্লাস/ব্যাচ" required><br>
+        <input type="email" id="student-email" placeholder="ইমেইল (ফলাফল পেতে)" required><br>
+        
+        <input type="password" id="exam-pin" placeholder="PIN কোড (গোপন)" required><br>
+        <button type="button" onclick="unlockExam()">লক খুলুন ও পরীক্ষা শুরু করুন</button>
+        <p id="lock-message" style="color: red; margin-top: 10px;"></p>
+    </div>
+
+    <div class="quiz-container">
+        <h2>অ্যাডভান্সড সিনিয়র স্টাফ নার্স মডেল টেস্ট</h2>
+        <div class="timer-info">
+            সময় বাকি: <span id="timer">০১:০০:০০</span>
+        </div>
+        <p style="text-align: center; color: #dc3545;">**মোট নম্বর: ১০০। প্রতি ভুল উত্তরের জন্য ০.২৫ করে কাটা যাবে।**</p>
+        
+        <form id="quizForm"></form>
+
+        <button type="button" id="submit-btn" onclick="submitQuiz(false)">ফলাফল দেখুন ও ব্যাখ্যা জানুন</button>
+
+        <div id="result"></div>
+    </div>
+</div>
+
+<script>
+    // ======================================================================
+    // ১. পিন কোড এবং কনফিগারেশন
+    // ======================================================================
+
+    const CORRECT_PIN = "osman201222@"; // আপনার নতুন গোপন পিন
+    let studentInfo = {}; 
+
+    const quizQuestions = [
+        { qName: "q1", question: "১. রক্তচাপ (Blood Pressure) মাপার জন্য ব্যবহৃত যন্ত্রটির নাম কী?", options: ["থার্মোমিটার", "স্ফিগমোম্যানোমিটার", "স্টেথোস্কোপ", "অক্সিমিটার"], answer: "b", explanation: "রক্তচাপ পরিমাপের জন্য **স্ফিগমোম্যানোমিটার** ব্যবহার করা হয়। এটি নার্সিং ও স্বাস্থ্য পরীক্ষার একটি মৌলিক অংশ। স্টেথোস্কোপ হার্টবিট বা ফুসফুসের শব্দ শোনার জন্য ব্যবহৃত হয়।" },
+        { qName: "q2", question: "২. প্রসবের পর রক্তক্ষরণ (Postpartum Hemorrhage - PPH) প্রতিরোধে প্রথম করণীয় কী?", options: ["অক্সিটোসিন ইনজেকশন দেওয়া", "শিরায় স্যালাইন দেওয়া", "রক্ত সঞ্চালনের ব্যবস্থা করা", "শিশুকে মায়ের দুধ খাওয়ানো"], answer: "a", explanation: "**অক্সিটোসিন (Oxytocin)** হলো PPH প্রতিরোধের জন্য প্রথম পছন্দনীয় ওষুধ। এটি দ্রুত জরায়ুর সংকোচন ঘটিয়ে রক্তনালী বন্ধ করতে সাহায্য করে।" },
+        { qName: "q3", question: "৩. বাংলাদেশে জাতীয় স্বাস্থ্য নীতি সর্বশেষ কবে প্রণীত হয়?", options: ["২০১১", "২০০৯", "১৯৯৯", "২০১২"], answer: "a", explanation: "বাংলাদেশের সর্বশেষ **জাতীয় স্বাস্থ্য নীতি ২০১১** সালে প্রণীত হয়। এটি স্বাস্থ্য খাতে সরকারের লক্ষ্য ও কর্মপরিকল্পনা নির্ধারণ করে।" },
+        { qName: "q4", question: "৪. একজন সিনিয়র স্টাফ নার্সের মূল কাজ কোনটি?", options: ["অফিসের হিসাব রাখা", "রোগীর সরাসরি যত্ন প্রদান ও সুপারভাইজ করা", "নিয়োগ পরীক্ষার প্রশ্ন তৈরি", "শুধুমাত্র ডাক্তারের সাথে মিটিং করা"], answer: "b", explanation: "সিনিয়র স্টাফ নার্সের প্রধান কাজ হলো **রোগীর সরাসরি যত্ন প্রদান করা** এবং ওয়ার্ডের অন্যান্য নার্সিং স্টাফদের কাজের **তত্ত্বাবধান (Supervision)** করা।" }
+    ];
+
+    const totalMarks = 100;
+    const perQuestionMark = totalMarks / quizQuestions.length;
+    const negativeMarkingDeduction = perQuestionMark * 0.25;
+
+    // ======================================================================
+    // ২. পিন লজিক এবং আনলক ফাংশন
+    // ======================================================================
+
+    function unlockExam() {
+        const enteredPin = document.getElementById('exam-pin').value;
+        const studentName = document.getElementById('student-name').value.trim();
+        const studentRoll = document.getElementById('student-roll').value.trim();
+        const studentClass = document.getElementById('student-class').value.trim();
+        const studentEmail = document.getElementById('student-email').value.trim();
+        const lockMessage = document.getElementById('lock-message');
+        
+        // তথ্য যাচাই
+        if (!studentName || !studentRoll || !studentClass || !studentEmail) {
+            lockMessage.textContent = "অনুগ্রহ করে নাম, রোল, ক্লাস/ব্যাচ এবং ইমেইল পূরণ করুন।";
+            return;
+        }
+        
+        // PIN যাচাই
+        if (enteredPin === CORRECT_PIN) {
+            // তথ্য সেভ করা
+            studentInfo = {
+                name: studentName,
+                roll: studentRoll,
+                class: studentClass,
+                email: studentEmail,
+                startTime: new Date().toLocaleString()
+            };
+            
+            // UI পরিবর্তন: লক স্ক্রিন সরিয়ে পরীক্ষা শুরু
+            document.getElementById('lock-screen').style.display = 'none';
+            document.querySelector('.quiz-container').style.display = 'block';
+            document.querySelector('.timer-info').style.display = 'block';
+
+            loadQuestions();
+            startTimer();
+            lockMessage.textContent = "";
+
+        } else {
+            lockMessage.textContent = "ভুল PIN কোড। সঠিক কোড দিয়ে আবার চেষ্টা করুন।";
+        }
+    }
+    
+    // ======================================================================
+    // ৩. টাইমার, প্রশ্ন লোড এবং ফলাফল ফাংশন (পূর্বের মতোই আছে)
+    // ======================================================================
+
+    let timeInSeconds = 3600; 
+    let timerInterval;
+
+    function startTimer() {
+        const timerDisplay = document.getElementById('timer');
+        
+        timerInterval = setInterval(() => {
+            timeInSeconds--;
+            const hours = Math.floor(timeInSeconds / 3600);
+            const minutes = Math.floor((timeInSeconds % 3600) / 60);
+            const seconds = timeInSeconds % 60;
+
+            const timeString = String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            
+            timerDisplay.textContent = timeString;
+
+            if (timeInSeconds <= 0) {
+                clearInterval(timerInterval);
+                alert("সময় শেষ! আপনার পরীক্ষা স্বয়ংক্রিয়ভাবে জমা দেওয়া হলো।");
+                submitQuiz(true); 
+            }
+        }, 1000);
+    }
+
+    function loadQuestions() {
+        const quizForm = document.getElementById('quizForm');
+        quizQuestions.forEach((q) => {
+            const questionBox = document.createElement('div');
+            questionBox.className = 'question-box';
+            questionBox.setAttribute('id', `box-${q.qName}`);
+
+            const questionText = document.createElement('div');
+            questionText.className = 'question';
+            questionText.textContent = q.question;
+            questionBox.appendChild(questionText);
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options';
+
+            q.options.forEach((optionText, optIndex) => {
+                const optValue = String.fromCharCode('a'.charCodeAt(0) + optIndex); 
+                const label = document.createElement('label');
+                
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = q.qName;
+                input.value = optValue;
+                
+                label.appendChild(input);
+                label.appendChild(document.createTextNode(` ${optionText}`));
+                optionsDiv.appendChild(label);
+            });
+
+            questionBox.appendChild(optionsDiv);
+            quizForm.appendChild(questionBox);
+        });
+    }
+
+    function submitQuiz(isAutoSubmit) {
+        if (document.getElementById('submit-btn').disabled) return; 
+
+        clearInterval(timerInterval); 
+        
+        let score = 0;
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let unansweredCount = 0;
+
+        const quizForm = document.getElementById("quizForm");
+        const resultDiv = document.getElementById("result");
+        
+        quizQuestions.forEach((q) => {
+            const qBox = document.getElementById(`box-${q.qName}`);
+            const selected = quizForm.querySelector(`input[name="${q.qName}"]:checked`);
+            const correctOptionLabel = qBox.querySelector(`input[value="${q.answer}"]`).parentNode;
+            
+            qBox.querySelectorAll('input').forEach(input => { input.disabled = true; });
+
+            correctOptionLabel.classList.add('correct-answer');
+
+            let explanationDiv = document.createElement('div');
+            explanationDiv.className = 'explanation';
+            explanationDiv.innerHTML = `<strong>ব্যাখ্যা:</strong> ${q.explanation}`;
+            qBox.appendChild(explanationDiv);
+
+            if (selected) {
+                if (selected.value === q.answer) {
+                    score += perQuestionMark;
+                    correctCount++;
+                } else {
+                    score -= negativeMarkingDeduction;
+                    incorrectCount++;
+                    selected.parentNode.classList.add('incorrect-answer');
+                }
+            } else { unansweredCount++; }
+        });
+
+        let finalScore = Math.max(0, score);
+        
+        // চূড়ান্ত ফলাফল প্রদর্শন
+        resultDiv.innerHTML = `
+            <p style="color: #007bff; font-size: 1.5em;">🎉 আপনার প্রাপ্ত নম্বর: <strong>${finalScore.toFixed(2)}</strong> / ${totalMarks} </p>
+            <hr>
+            <p><strong>শিক্ষার্থীর তথ্য:</strong> ${studentInfo.name} | রোল: ${studentInfo.roll} | ইমেইল: ${studentInfo.email}</p>
+            <p>মোট প্রশ্ন: ${quizQuestions.length} | সঠিক: ${correctCount} | ভুল: ${incorrectCount} | উত্তর দেননি: ${unansweredCount}</p>
+        `;
+        
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('submit-btn').textContent = "পরীক্ষা শেষ হয়েছে";
+    }
+
+    // পেজ লোড হলে শুধুমাত্র লক স্ক্রিনটি দেখা যাবে
+    document.addEventListener('DOMContentLoaded', () => {
+        // কোনো প্রাথমিক লোড ফাংশন এখানে নেই, কারণ এটি unlockExam() ফাংশনের ভেতরে কল হবে।
+    });
+</script>
+
+</body>
+</html>
